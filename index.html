@@ -135,14 +135,28 @@ function speakEnglishBreakdown(word, pattern, btn) {
   const prefix = idx > 0 ? word.slice(0, idx) : '';
   const suffix = idx >= 0 ? word.slice(idx) : word;
 
+  const phonicsMap = {
+    'ear': 'eer', 'eer': 'eer', 'all': 'awl', 'alk': 'awk',
+    'ose': 'oze', 'oat': 'oat', 'oal': 'ole', 'ore': 'or',
+    'h': 'huh', 'sp': 'spuh', 'd': 'duh', 'b': 'buh',
+    'ch': 'chuh', 'c': 'cuh', 'w': 'wuh',
+    'sm': 'smuh', 't': 'tuh', 'r': 'ruh',
+    'g': 'guh', 'fl': 'fluh', 'st': 'stuh', 'f': 'fuh'
+  };
+
+  const getSound = (part) => {
+    const p = part.toLowerCase();
+    return phonicsMap[p] || part;
+  };
+
   speaking = true;
   if (btn) btn.disabled = true;
 
   const say = (text) => new Promise(resolve => {
     if (!text) { resolve(); return; }
-    const u = new SpeechSynthesisUtterance(text);
+    const u = new SpeechSynthesisUtterance(getSound(text));
     u.lang = 'en-US';
-    u.rate = 0.7;
+    u.rate = 0.65;
     u.onend = resolve;
     u.onerror = resolve;
     speechSynthesis.speak(u);
@@ -150,9 +164,9 @@ function speakEnglishBreakdown(word, pattern, btn) {
 
   (async () => {
     if (prefix) await say(prefix);
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 500));
     if (suffix) await say(suffix);
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(r => setTimeout(r, 700));
     await say(word);
     speaking = false;
     if (btn) btn.disabled = false;
@@ -314,26 +328,36 @@ function showStrokeOrder(char) {
   writerDiv.style.borderRadius = '10px';
   writerDiv.style.background = '#fff';
   container.appendChild(writerDiv);
-  const writer = HanziWriter.create('stroke-writer', char, {
-    width: 220,
-    height: 220,
-    padding: 8,
-    strokeAnimationSpeed: 1.2,
-    delayBetweenStrokes: 400,
-    showOutline: true,
-    showCharacter: false,
-    strokeColor: '#d32f2f'
-  });
-  writer.animateCharacter({
-    onComplete: () => {
-      const label = document.createElement('p');
-      label.textContent = '筆順示範：' + char + ' (再看一次請重新答對)';
-      label.style.fontSize = '1.2em';
-      label.style.color = '#00796b';
-      label.style.fontWeight = 'bold';
-      writerDiv.after(label);
-    }
-  });
+
+  if (typeof HanziWriter === 'undefined') {
+    writerDiv.innerHTML = `<p style="padding:20px;">筆順動畫載入中...<br><a href="https://www.edbchinese.hk/lexlist_ch/" target="_blank">查看官方筆順</a></p>`;
+    return;
+  }
+
+  try {
+    const writer = HanziWriter.create('stroke-writer', char, {
+      width: 220,
+      height: 220,
+      padding: 8,
+      strokeAnimationSpeed: 1.2,
+      delayBetweenStrokes: 400,
+      showOutline: true,
+      showCharacter: false,
+      strokeColor: '#d32f2f'
+    });
+    writer.animateCharacter({
+      onComplete: () => {
+        const label = document.createElement('p');
+        label.innerHTML = '筆順示範：' + char + '<br><a href="https://www.edbchinese.hk/lexlist_ch/" target="_blank" style="font-size:0.9em;">更多筆順 (教育局)</a>';
+        label.style.fontSize = '1.2em';
+        label.style.color = '#00796b';
+        label.style.fontWeight = 'bold';
+        writerDiv.after(label);
+      }
+    });
+  } catch (e) {
+    writerDiv.innerHTML = `<p style="padding:20px;">筆順示範<br><a href="https://www.edbchinese.hk/lexlist_ch/" target="_blank">查看官方筆順</a></p>`;
+  }
 }
 
 function startEnglishModule() {
@@ -406,12 +430,21 @@ function renderEnglishQuiz() {
   `;
   const optsDiv = document.getElementById('quiz-options');
   options.slice(0,3).forEach(opt => {
+    const wrap = document.createElement('div');
+    wrap.style.margin = '12px auto';
+    wrap.style.maxWidth = '320px';
     const btn = document.createElement('div');
     btn.className = 'option';
     btn.textContent = opt;
-    btn.onmouseover = () => speak(opt, 'en-US');
     btn.onclick = () => checkEnglishAnswer(opt === correct, btn, correct);
-    optsDiv.appendChild(btn);
+    const listenBtn = document.createElement('button');
+    listenBtn.className = 'pronounce';
+    listenBtn.textContent = '🔊 Listen';
+    listenBtn.style.marginTop = '6px';
+    listenBtn.onclick = (e) => { e.stopPropagation(); speak(opt, 'en-US', listenBtn); };
+    wrap.appendChild(btn);
+    wrap.appendChild(listenBtn);
+    optsDiv.appendChild(wrap);
   });
 }
 
