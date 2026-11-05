@@ -120,6 +120,45 @@ function showSection(id) {
   if (id === 'english') startEnglishModule();
 }
 
+function speakEnglishBreakdown(word, pattern, btn) {
+  if (speaking || !('speechSynthesis' in window)) return;
+  const clean = pattern.replace(/[^a-zA-Z]/g, '').toLowerCase();
+  const lower = word.toLowerCase();
+  let idx = lower.lastIndexOf(clean);
+  if (idx === -1 && clean.length > 2) {
+    for (let len = clean.length - 1; len >= 2; len--) {
+      const sub = clean.slice(-len);
+      const pos = lower.lastIndexOf(sub);
+      if (pos !== -1) { idx = pos; break; }
+    }
+  }
+  const prefix = idx > 0 ? word.slice(0, idx) : '';
+  const suffix = idx >= 0 ? word.slice(idx) : word;
+
+  speaking = true;
+  if (btn) btn.disabled = true;
+
+  const say = (text) => new Promise(resolve => {
+    if (!text) { resolve(); return; }
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = 0.7;
+    u.onend = resolve;
+    u.onerror = resolve;
+    speechSynthesis.speak(u);
+  });
+
+  (async () => {
+    if (prefix) await say(prefix);
+    await new Promise(r => setTimeout(r, 400));
+    if (suffix) await say(suffix);
+    await new Promise(r => setTimeout(r, 600));
+    await say(word);
+    speaking = false;
+    if (btn) btn.disabled = false;
+  })();
+}
+
 function speak(text, lang, btn) {
   if (speaking || !('speechSynthesis' in window)) return;
   speaking = true;
@@ -264,29 +303,37 @@ function checkChineseAnswer(isCorrect, btn, correctZh) {
 
 function showStrokeOrder(char) {
   const container = document.getElementById('chinese-content');
+  const old = document.getElementById('stroke-writer');
+  if (old) old.remove();
   const writerDiv = document.createElement('div');
   writerDiv.id = 'stroke-writer';
   writerDiv.style.margin = '20px auto';
-  writerDiv.style.width = '200px';
-  writerDiv.style.height = '200px';
+  writerDiv.style.width = '220px';
+  writerDiv.style.height = '220px';
+  writerDiv.style.border = '2px solid #00796b';
+  writerDiv.style.borderRadius = '10px';
+  writerDiv.style.background = '#fff';
   container.appendChild(writerDiv);
   const writer = HanziWriter.create('stroke-writer', char, {
-    width: 200,
-    height: 200,
-    padding: 5,
-    strokeAnimationSpeed: 1,
-    delayBetweenStrokes: 300,
+    width: 220,
+    height: 220,
+    padding: 8,
+    strokeAnimationSpeed: 1.2,
+    delayBetweenStrokes: 400,
     showOutline: true,
-    showCharacter: false
+    showCharacter: false,
+    strokeColor: '#d32f2f'
   });
-  writer.animateCharacter();
-  setTimeout(() => {
-    const label = document.createElement('p');
-    label.textContent = '筆順示範：' + char;
-    label.style.fontSize = '1.2em';
-    label.style.color = '#00796b';
-    writerDiv.after(label);
-  }, 500);
+  writer.animateCharacter({
+    onComplete: () => {
+      const label = document.createElement('p');
+      label.textContent = '筆順示範：' + char + ' (再看一次請重新答對)';
+      label.style.fontSize = '1.2em';
+      label.style.color = '#00796b';
+      label.style.fontWeight = 'bold';
+      writerDiv.after(label);
+    }
+  });
 }
 
 function startEnglishModule() {
@@ -308,7 +355,7 @@ function renderEnglishModule() {
       <div class="group-card">
         <div class="emoji">${g.emoji[i]}</div>
         <div class="english">${highlighted}</div>
-        <button class="pronounce" onclick="speak('${word}', 'en-US', this)">Listen</button>
+        <button class="pronounce" onclick="speakEnglishBreakdown('${word}', '${g.pattern}', this)">Listen</button>
       </div>
     `;
   });
