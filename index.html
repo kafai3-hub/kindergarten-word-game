@@ -4,27 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kindergarten Word Game - 中英文單詞認字遊戲 (Cantonese)</title>
+<meta property="og:title" content="Kindergarten Word Game 🌟 中英文單詞遊戲">
+<meta property="og:description" content="Fun kindergarten game to learn Traditional Chinese & English words with Cantonese pronunciation!">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f31f.png">
+<meta property="og:url" content="https://kafai3-hub.github.io/kindergarten-word-game/">
+<meta name="twitter:card" content="summary_large_image">
 <style>
 body { font-family: 'Arial', 'Microsoft JhengHei', sans-serif; background: #e0f7fa; margin: 0; padding: 20px; text-align: center; }
-h1 { color: #00796b; font-size: 2.5em; }
-.tabs { margin: 20px; }
-.tab { background: #4db6ac; color: white; border: none; padding: 15px 30px; font-size: 1.2em; margin: 5px; border-radius: 10px; cursor: pointer; }
+h1 { color: #00796b; font-size: 2.2em; margin-bottom: 10px; }
+.tabs { margin: 15px 0; }
+.tab { background: #4db6ac; color: white; border: none; padding: 12px 25px; font-size: 1.1em; margin: 5px; border-radius: 10px; cursor: pointer; }
 .tab.active { background: #00796b; }
 .section { display: none; }
 .section.active { display: block; }
-.word-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin: 20px; }
-.word-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; }
-.word-card:hover { transform: scale(1.05); }
-.chinese { font-size: 3em; color: #d32f2f; font-weight: bold; }
-.pinyin { font-size: 1.2em; color: #1976d2; margin: 5px 0; }
-.english { font-size: 1.5em; color: #388e3c; }
-.emoji { font-size: 4em; }
-button.listen { background: #ff9800; color: white; border: none; padding: 10px 20px; font-size: 1.1em; border-radius: 10px; margin-top: 10px; cursor: pointer; }
-.quiz { margin: 20px; }
-.option { background: #bbdefb; margin: 10px; padding: 15px; border-radius: 10px; font-size: 1.5em; cursor: pointer; }
+.word-card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 320px; margin: 20px auto; }
+.chinese { font-size: 3.5em; color: #d32f2f; font-weight: bold; margin: 10px 0; }
+.english { font-size: 2.8em; color: #388e3c; font-weight: bold; }
+.pattern { font-size: 1.1em; color: #1976d2; margin: 8px 0; }
+.pattern .highlight { color: #e65100; font-weight: bold; background: #fff3e0; padding: 2px 6px; border-radius: 4px; }
+.emoji { font-size: 5em; }
+button { font-size: 1.1em; padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; margin: 5px; }
+button.pronounce { background: #ff9800; color: white; }
+button.pronounce:disabled { background: #ccc; cursor: not-allowed; }
+button.nav { background: #4db6ac; color: white; }
+button.share { background: #25D366; color: white; font-size: 1.1em; padding: 12px 25px; }
+.option { background: #bbdefb; margin: 8px auto; padding: 15px; border-radius: 10px; font-size: 1.4em; cursor: pointer; max-width: 280px; }
 .option.correct { background: #81c784; }
 .option.wrong { background: #e57373; }
-.group { margin: 20px 0; background: white; padding: 15px; border-radius: 10px; }
+.stars { font-size: 1.8em; margin: 10px; }
+.progress { margin: 15px; font-size: 1.1em; color: #00796b; }
+#quiz-area { margin-top: 15px; }
 </style>
 </head>
 <body>
@@ -34,51 +43,52 @@ button.listen { background: #ff9800; color: white; border: none; padding: 10px 2
   <button class="tab" onclick="showSection('english')">English 英文</button>
   <button class="tab" onclick="showSection('similar')">Similar Sounds 相似音</button>
 </div>
+<button class="share" onclick="shareWhatsApp()">📤 Share on WhatsApp</button>
 
 <div id="chinese" class="section active">
-  <h2>中文單詞 - 點擊聽粵語發音</h2>
-  <div class="word-grid" id="chinese-grid"></div>
+  <h2>中文單詞 - 聽粵語發音</h2>
+  <div id="chinese-content"></div>
 </div>
 
 <div id="english" class="section">
-  <h2>English Words - Click to Listen</h2>
-  <div class="word-grid" id="english-grid"></div>
+  <h2>English Words - Listen & Learn</h2>
+  <div id="english-content"></div>
 </div>
 
 <div id="similar" class="section">
   <h2>Similar Sounds Practice - 相似發音練習</h2>
   <p>聽聲音，選擇正確的單詞</p>
-  <div id="similar-content"></div>
   <button onclick="startSimilarQuiz()" style="font-size:1.2em; padding:10px 20px;">Start / Next Quiz</button>
+  <div id="similar-content"></div>
   <div id="quiz-area"></div>
 </div>
 
 <script>
 const chineseWords = [
-  { zh: "起床", py: "qǐ chuáng", en: "get up", emoji: "🛏️" },
-  { zh: "洗臉", py: "xǐ liǎn", en: "wash face", emoji: "🧼" },
-  { zh: "刷牙", py: "shuā yá", en: "brush teeth", emoji: "🪥" },
-  { zh: "早餐", py: "zǎo cān", en: "breakfast", emoji: "🍳" },
-  { zh: "學校", py: "xué xiào", en: "school", emoji: "🏫" },
-  { zh: "玩耍", py: "wán shuǎ", en: "play", emoji: "🎮" },
-  { zh: "圖畫", py: "tú huà", en: "drawing", emoji: "🎨" },
-  { zh: "遊戲", py: "yóu xì", en: "game", emoji: "🎲" },
-  { zh: "課室", py: "kè shì", en: "classroom", emoji: "📚" },
-  { zh: "時間", py: "shí jiān", en: "time", emoji: "⏰" },
-  { zh: "旅行", py: "lǚ xíng", en: "travel", emoji: "✈️" },
-  { zh: "風箍", py: "fēng zhēng", en: "kite", emoji: "🪁" },
-  { zh: "老鼠", py: "lǎo shǔ", en: "mouse", emoji: "🐭" },
-  { zh: "認識", py: "rèn shi", en: "know / recognize", emoji: "👀" },
-  { zh: "橙汁", py: "chéng zhī", en: "orange juice", emoji: "🧃" },
-  { zh: "乳酪", py: "rǔ lào", en: "yogurt", emoji: "🥛" },
-  { zh: "問候", py: "wèn hòu", en: "greet", emoji: "👋" },
-  { zh: "親切", py: "qīn qiè", en: "kind", emoji: "😊" },
-  { zh: "生氣", py: "shēng qì", en: "angry", emoji: "😠" },
-  { zh: "蛋糕", py: "dàn gāo", en: "cake", emoji: "🎂" },
-  { zh: "驚慌", py: "jīng huāng", en: "panic", emoji: "😱" },
-  { zh: "亂跑", py: "luàn pǎo", en: "run around", emoji: "🏃" },
-  { zh: "團結", py: "tuán jié", en: "unite", emoji: "🤝" },
-  { zh: "國家", py: "guó jiā", en: "country", emoji: "🌍" }
+  { zh: "起床", emoji: "🛏️" },
+  { zh: "洗臉", emoji: "🧼" },
+  { zh: "刷牙", emoji: "🪥" },
+  { zh: "早餐", emoji: "🍳" },
+  { zh: "學校", emoji: "🏫" },
+  { zh: "玩耍", emoji: "🎮" },
+  { zh: "圖畫", emoji: "🎨" },
+  { zh: "遊戲", emoji: "🎲" },
+  { zh: "課室", emoji: "📚" },
+  { zh: "時間", emoji: "⏰" },
+  { zh: "旅行", emoji: "✈️" },
+  { zh: "風箍", emoji: "🪁" },
+  { zh: "老鼠", emoji: "🐭" },
+  { zh: "認識", emoji: "👀" },
+  { zh: "橙汁", emoji: "🧃" },
+  { zh: "乳酪", emoji: "🥛" },
+  { zh: "問候", emoji: "👋" },
+  { zh: "親切", emoji: "😊" },
+  { zh: "生氣", emoji: "😠" },
+  { zh: "蛋糕", emoji: "🎂" },
+  { zh: "驚慌", emoji: "😱" },
+  { zh: "亂跑", emoji: "🏃" },
+  { zh: "團結", emoji: "🤝" },
+  { zh: "國家", emoji: "🌍" }
 ];
 
 const englishGroups = [
@@ -92,71 +102,267 @@ const englishGroups = [
   { pattern: "-ore", words: ["store", "fork", "horse"], emoji: ["🏪", "🍴", "🐴"] }
 ];
 
+let speaking = false;
+let currentSection = 0;
+let currentCard = 0;
+let sectionStars = 0;
+let sectionTotal = 0;
+let mode = 'learn';
+
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   event.target.classList.add('active');
+  if (id === 'chinese') startChineseSection();
+  if (id === 'english') startEnglishModule();
 }
 
-function speak(text, lang) {
-  if ('speechSynthesis' in window) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
-    utterance.rate = 0.8;
-    // Prefer Cantonese (Hong Kong) voice
-    const voices = speechSynthesis.getVoices();
-    let preferred = null;
-    if (lang.startsWith('zh')) {
-      preferred = voices.find(v => 
-        v.lang === 'zh-HK' || 
-        v.lang.startsWith('zh-HK') || 
-        v.lang.includes('yue') ||
-        (v.name && (v.name.toLowerCase().includes('cantonese') || v.name.toLowerCase().includes('hong kong') || v.name.includes('粵')))
-      );
-      // Fallback to any Chinese voice if no Cantonese found
-      if (!preferred) {
-        preferred = voices.find(v => v.lang.startsWith('zh'));
-      }
-    }
-    if (preferred) utterance.voice = preferred;
-    speechSynthesis.speak(utterance);
-  } else {
-    alert('Speech not supported in this browser. Try Chrome or Edge.');
+function speak(text, lang, btn) {
+  if (speaking || !('speechSynthesis' in window)) return;
+  speaking = true;
+  if (btn) btn.disabled = true;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = lang;
+  utterance.rate = 0.8;
+  const voices = speechSynthesis.getVoices();
+  let preferred = null;
+  if (lang.startsWith('zh')) {
+    preferred = voices.find(v => v.lang === 'zh-HK' || v.lang.startsWith('zh-HK') || v.lang.includes('yue') || (v.name && (v.name.toLowerCase().includes('cantonese') || v.name.toLowerCase().includes('hong kong') || v.name.includes('粵'))));
+    if (!preferred) preferred = voices.find(v => v.lang.startsWith('zh'));
   }
+  if (preferred) utterance.voice = preferred;
+  utterance.onend = () => {
+    speaking = false;
+    if (btn) btn.disabled = false;
+  };
+  utterance.onerror = () => {
+    speaking = false;
+    if (btn) btn.disabled = false;
+  };
+  speechSynthesis.speak(utterance);
 }
 
-function renderChinese() {
-  const grid = document.getElementById('chinese-grid');
-  chineseWords.forEach(w => {
-    const card = document.createElement('div');
-    card.className = 'word-card';
-    card.innerHTML = `
+function highlightPattern(word, pattern) {
+  const p = pattern.replace(/[^a-zA-Z]/g, '').toLowerCase();
+  if (word.toLowerCase().endsWith(p.slice(-3)) || word.toLowerCase().includes(p)) {
+    const idx = word.toLowerCase().lastIndexOf(p.slice(-2) || p.slice(0,2));
+    if (idx >= 0) {
+      return word.slice(0, idx) + '<span class="highlight">' + word.slice(idx) + '</span>';
+    }
+  }
+  return word;
+}
+
+function startChineseSection() {
+  currentSection = 0;
+  currentCard = 0;
+  mode = 'learn';
+  sectionStars = 0;
+  sectionTotal = 0;
+  renderChineseCard();
+}
+
+function renderChineseCard() {
+  const start = currentSection * 5;
+  const words = chineseWords.slice(start, start + 5);
+  if (currentCard >= words.length) {
+    document.getElementById('chinese-content').innerHTML = `
+      <h3>Section ${currentSection + 1} Complete!</h3>
+      <p>Stars this section: ${sectionStars} / ${sectionTotal}</p>
+      <button class="nav" onclick="startChineseQuiz()">Start Flashcard Quiz 開始小測</button>
+      <button class="nav" onclick="nextChineseSection()">Next Section 下一組</button>
+    `;
+    return;
+  }
+  const w = words[currentCard];
+  document.getElementById('chinese-content').innerHTML = `
+    <div class="progress">Section ${currentSection + 1} · Card ${currentCard + 1} / ${words.length}</div>
+    <button class="pronounce" id="pronBtn" onclick="speak('${w.zh}', 'zh-HK', this)">讀音</button>
+    <div class="word-card">
       <div class="emoji">${w.emoji}</div>
       <div class="chinese">${w.zh}</div>
-      <div class="pinyin">${w.py}</div>
-      <div class="english">${w.en}</div>
-      <button class="listen" onclick="speak('${w.zh}', 'zh-HK'); setTimeout(() => speak('${w.en}', 'en-US'), 1200);">🔊 Listen 聽</button>
+    </div>
+    <button class="nav" onclick="nextChineseCard()">Next 下一張</button>
+  `;
+}
+
+function nextChineseCard() {
+  currentCard++;
+  renderChineseCard();
+}
+
+function nextChineseSection() {
+  currentSection++;
+  currentCard = 0;
+  if (currentSection * 5 >= chineseWords.length) {
+    document.getElementById('chinese-content').innerHTML = '<h3>All sections complete! 全部完成！</h3>';
+    return;
+  }
+  renderChineseCard();
+}
+
+function startChineseQuiz() {
+  mode = 'quiz';
+  currentCard = 0;
+  sectionStars = 0;
+  sectionTotal = 0;
+  renderChineseQuiz();
+}
+
+function renderChineseQuiz() {
+  const start = currentSection * 5;
+  const words = chineseWords.slice(start, start + 5);
+  if (currentCard >= words.length) {
+    document.getElementById('chinese-content').innerHTML = `
+      <h3>Quiz Complete!</h3>
+      <div class="stars">${'⭐'.repeat(sectionStars)}${'☆'.repeat(sectionTotal - sectionStars)}</div>
+      <p>${sectionStars} / ${sectionTotal} correct</p>
+      <button class="nav" onclick="nextChineseSection()">Next Section 下一組</button>
     `;
-    grid.appendChild(card);
+    return;
+  }
+  const correct = words[currentCard];
+  const options = [correct];
+  while (options.length < 3) {
+    const rand = chineseWords[Math.floor(Math.random() * chineseWords.length)];
+    if (!options.find(o => o.zh === rand.zh)) options.push(rand);
+  }
+  options.sort(() => Math.random() - 0.5);
+  sectionTotal++;
+  document.getElementById('chinese-content').innerHTML = `
+    <div class="progress">Quiz · ${currentCard + 1} / ${words.length}</div>
+    <button class="pronounce" onclick="speak('${correct.zh}', 'zh-HK', this)">讀音</button>
+    <div class="word-card">
+      <div class="chinese">${correct.zh}</div>
+    </div>
+    <div id="quiz-options"></div>
+  `;
+  const optsDiv = document.getElementById('quiz-options');
+  options.forEach(opt => {
+    const btn = document.createElement('div');
+    btn.className = 'option';
+    btn.innerHTML = `${opt.emoji} ${opt.zh}`;
+    btn.onclick = () => checkChineseAnswer(opt.zh === correct.zh, btn);
+    optsDiv.appendChild(btn);
   });
 }
 
-function renderEnglish() {
-  const grid = document.getElementById('english-grid');
-  englishGroups.forEach(g => {
-    g.words.forEach((word, i) => {
-      const card = document.createElement('div');
-      card.className = 'word-card';
-      card.innerHTML = `
-        <div class="emoji">${g.emoji[i]}</div>
-        <div class="english" style="font-size:2.5em; font-weight:bold;">${word}</div>
-        <div class="pinyin">Pattern: ${g.pattern}</div>
-        <button class="listen" onclick="speak('${word}', 'en-US')">🔊 Listen</button>
-      `;
-      grid.appendChild(card);
-    });
+function checkChineseAnswer(isCorrect, btn) {
+  const options = document.querySelectorAll('.option');
+  options.forEach(o => o.style.pointerEvents = 'none');
+  if (isCorrect) {
+    btn.classList.add('correct');
+    sectionStars++;
+    speak('正確', 'zh-HK');
+  } else {
+    btn.classList.add('wrong');
+    options.forEach(o => { if (o.textContent.includes(chineseWords[currentSection*5 + currentCard].zh)) o.classList.add('correct'); });
+    speak('再試一次', 'zh-HK');
+  }
+  setTimeout(() => { currentCard++; renderChineseQuiz(); }, 1200);
+}
+
+function startEnglishModule() {
+  currentSection = 0;
+  currentCard = 0;
+  mode = 'learn';
+  renderEnglishCard();
+}
+
+function renderEnglishCard() {
+  if (currentSection >= englishGroups.length) {
+    document.getElementById('english-content').innerHTML = '<h3>All modules complete!</h3>';
+    return;
+  }
+  const g = englishGroups[currentSection];
+  if (currentCard >= g.words.length) {
+    document.getElementById('english-content').innerHTML = `
+      <h3>Module "${g.pattern}" Complete!</h3>
+      <button class="nav" onclick="startEnglishQuiz()">Start Quiz</button>
+      <button class="nav" onclick="nextEnglishModule()">Next Module</button>
+    `;
+    return;
+  }
+  const word = g.words[currentCard];
+  const highlighted = highlightPattern(word, g.pattern);
+  document.getElementById('english-content').innerHTML = `
+    <div class="progress">Module ${currentSection + 1} · Card ${currentCard + 1} / ${g.words.length}</div>
+    <button class="pronounce" onclick="speak('${word}', 'en-US', this)">Listen</button>
+    <div class="word-card">
+      <div class="emoji">${g.emoji[currentCard]}</div>
+      <div class="english">${highlighted}</div>
+      <div class="pattern">Pattern: ${g.pattern}</div>
+    </div>
+    <button class="nav" onclick="nextEnglishCard()">Next</button>
+  `;
+}
+
+function nextEnglishCard() {
+  currentCard++;
+  renderEnglishCard();
+}
+
+function nextEnglishModule() {
+  currentSection++;
+  currentCard = 0;
+  renderEnglishCard();
+}
+
+function startEnglishQuiz() {
+  mode = 'quiz';
+  currentCard = 0;
+  sectionStars = 0;
+  sectionTotal = 0;
+  renderEnglishQuiz();
+}
+
+function renderEnglishQuiz() {
+  const g = englishGroups[currentSection];
+  if (currentCard >= g.words.length) {
+    document.getElementById('english-content').innerHTML = `
+      <h3>Quiz Complete!</h3>
+      <div class="stars">${'⭐'.repeat(sectionStars)}${'☆'.repeat(sectionTotal - sectionStars)}</div>
+      <p>${sectionStars} / ${sectionTotal} correct</p>
+      <button class="nav" onclick="nextEnglishModule()">Next Module</button>
+    `;
+    return;
+  }
+  const correct = g.words[currentCard];
+  const options = [...g.words];
+  while (options.length < 3) options.push(g.words[Math.floor(Math.random()*g.words.length)]);
+  options.sort(() => Math.random() - 0.5);
+  sectionTotal++;
+  document.getElementById('english-content').innerHTML = `
+    <div class="progress">Quiz · ${currentCard + 1} / ${g.words.length}</div>
+    <button class="pronounce" onclick="speak('${correct}', 'en-US', this)">Listen</button>
+    <div class="word-card">
+      <div class="english">${correct}</div>
+    </div>
+    <div id="quiz-options"></div>
+  `;
+  const optsDiv = document.getElementById('quiz-options');
+  options.slice(0,3).forEach((opt, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'option';
+    btn.innerHTML = `${g.emoji[g.words.indexOf(opt)] || '❓'} ${opt}`;
+    btn.onclick = () => checkEnglishAnswer(opt === correct, btn);
+    optsDiv.appendChild(btn);
   });
+}
+
+function checkEnglishAnswer(isCorrect, btn) {
+  const options = document.querySelectorAll('.option');
+  options.forEach(o => o.style.pointerEvents = 'none');
+  if (isCorrect) {
+    btn.classList.add('correct');
+    sectionStars++;
+    speak('Great job!', 'en-US');
+  } else {
+    btn.classList.add('wrong');
+    speak('Try again', 'en-US');
+  }
+  setTimeout(() => { currentCard++; renderEnglishQuiz(); }, 1200);
 }
 
 let currentQuiz = null;
@@ -165,21 +371,26 @@ function startSimilarQuiz() {
   const correctIdx = Math.floor(Math.random() * group.words.length);
   const correctWord = group.words[correctIdx];
   currentQuiz = { group, correctWord, correctIdx };
-  
   speak(correctWord, 'en-US');
-  
   const area = document.getElementById('quiz-area');
-  area.innerHTML = `<h3>What did you hear? (Pattern: ${group.pattern})</h3>`;
+  area.innerHTML = `<h3>What did you hear? (Pattern: ${group.pattern})</h3>
+    <button class="pronounce" onclick="speak('${correctWord}', 'en-US', this)">Listen Again</button>
+    <div id="sim-options"></div>`;
+  const opts = document.getElementById('sim-options');
   group.words.forEach((word, i) => {
+    const div = document.createElement('div');
+    div.style.margin = '10px';
+    div.innerHTML = `<button class="pronounce" onclick="speak('${word}', 'en-US', this)">🔊 ${word}</button>`;
     const btn = document.createElement('div');
     btn.className = 'option';
     btn.innerHTML = `${group.emoji[i]} ${word}`;
-    btn.onclick = () => checkAnswer(word, btn);
-    area.appendChild(btn);
+    btn.onclick = () => checkSimilarAnswer(word, btn);
+    div.appendChild(btn);
+    opts.appendChild(div);
   });
 }
 
-function checkAnswer(selected, btn) {
+function checkSimilarAnswer(selected, btn) {
   const options = document.querySelectorAll('.option');
   options.forEach(o => o.style.pointerEvents = 'none');
   if (selected === currentQuiz.correctWord) {
@@ -194,10 +405,14 @@ function checkAnswer(selected, btn) {
   }
 }
 
-// Load voices
+function shareWhatsApp() {
+  const url = encodeURIComponent('https://kafai3-hub.github.io/kindergarten-word-game/');
+  const text = encodeURIComponent('Check out this fun kindergarten word game! 🌟 Learn Chinese & English with Cantonese pronunciation: ');
+  window.open(`https://wa.me/?text=${text}${url}`, '_blank');
+}
+
 speechSynthesis.onvoiceschanged = () => {};
-renderChinese();
-renderEnglish();
+startChineseSection();
 </script>
 </body>
 </html>
