@@ -37,6 +37,7 @@ button.share { background: #25D366; color: white; font-size: 1.1em; padding: 12p
 .group-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); min-width: 180px; }
 #quiz-area { margin-top: 15px; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5.0/dist/hanzi-writer.min.js"></script>
 </head>
 <body>
 <h1>🌟 Kindergarten Word Game 🌟<br>中英文單詞認字 & 粵語發音遊戲</h1>
@@ -248,12 +249,42 @@ function checkChineseAnswer(isCorrect, btn, correctZh) {
     btn.classList.add('correct');
     sectionStars++;
     speak('正確', 'zh-HK');
+    if (correctZh === '學校' || correctZh.includes('學')) {
+      setTimeout(() => showStrokeOrder('學'), 800);
+    }
   } else {
     btn.classList.add('wrong');
     document.querySelectorAll('.option').forEach(o => { if (o.textContent === correctZh) o.classList.add('correct'); });
     speak('再試一次', 'zh-HK');
   }
-  setTimeout(() => { currentCard++; renderChineseQuiz(); }, 1200);
+  setTimeout(() => { currentCard++; renderChineseQuiz(); }, 1800);
+}
+
+function showStrokeOrder(char) {
+  const container = document.getElementById('chinese-content');
+  const writerDiv = document.createElement('div');
+  writerDiv.id = 'stroke-writer';
+  writerDiv.style.margin = '20px auto';
+  writerDiv.style.width = '200px';
+  writerDiv.style.height = '200px';
+  container.appendChild(writerDiv);
+  const writer = HanziWriter.create('stroke-writer', char, {
+    width: 200,
+    height: 200,
+    padding: 5,
+    strokeAnimationSpeed: 1,
+    delayBetweenStrokes: 300,
+    showOutline: true,
+    showCharacter: false
+  });
+  writer.animateCharacter();
+  setTimeout(() => {
+    const label = document.createElement('p');
+    label.textContent = '筆順示範：' + char;
+    label.style.fontSize = '1.2em';
+    label.style.color = '#00796b';
+    writerDiv.after(label);
+  }, 500);
 }
 
 function startEnglishModule() {
