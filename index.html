@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kindergarten Word Game - 中英文單詞認字遊戲 (Cantonese)</title>
+<style>
+body { font-family: 'Arial', 'Microsoft JhengHei', sans-serif; background: #e0f7fa; margin: 0; padding: 20px; text-align: center; }
+h1 { color: #00796b; font-size: 2.5em; }
+.tabs { margin: 20px; }
+.tab { background: #4db6ac; color: white; border: none; padding: 15px 30px; font-size: 1.2em; margin: 5px; border-radius: 10px; cursor: pointer; }
+.tab.active { background: #00796b; }
+.section { display: none; }
+.section.active { display: block; }
+.word-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin: 20px; }
+.word-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; }
+.word-card:hover { transform: scale(1.05); }
+.chinese { font-size: 3em; color: #d32f2f; font-weight: bold; }
+.pinyin { font-size: 1.2em; color: #1976d2; margin: 5px 0; }
+.english { font-size: 1.5em; color: #388e3c; }
+.emoji { font-size: 4em; }
+button.listen { background: #ff9800; color: white; border: none; padding: 10px 20px; font-size: 1.1em; border-radius: 10px; margin-top: 10px; cursor: pointer; }
+.quiz { margin: 20px; }
+.option { background: #bbdefb; margin: 10px; padding: 15px; border-radius: 10px; font-size: 1.5em; cursor: pointer; }
+.option.correct { background: #81c784; }
+.option.wrong { background: #e57373; }
+.group { margin: 20px 0; background: white; padding: 15px; border-radius: 10px; }
+</style>
+</head>
+<body>
+<h1>🌟 Kindergarten Word Game 🌟<br>中英文單詞認字 & 粵語發音遊戲</h1>
+<div class="tabs">
+  <button class="tab active" onclick="showSection('chinese')">中文 Chinese</button>
+  <button class="tab" onclick="showSection('english')">English 英文</button>
+  <button class="tab" onclick="showSection('similar')">Similar Sounds 相似音</button>
+</div>
+
+<div id="chinese" class="section active">
+  <h2>中文單詞 - 點擊聽粵語發音</h2>
+  <div class="word-grid" id="chinese-grid"></div>
+</div>
+
+<div id="english" class="section">
+  <h2>English Words - Click to Listen</h2>
+  <div class="word-grid" id="english-grid"></div>
+</div>
+
+<div id="similar" class="section">
+  <h2>Similar Sounds Practice - 相似發音練習</h2>
+  <p>聽聲音，選擇正確的單詞</p>
+  <div id="similar-content"></div>
+  <button onclick="startSimilarQuiz()" style="font-size:1.2em; padding:10px 20px;">Start / Next Quiz</button>
+  <div id="quiz-area"></div>
+</div>
+
+<script>
+const chineseWords = [
+  { zh: "起床", py: "qǐ chuáng", en: "get up", emoji: "🛏️" },
+  { zh: "洗臉", py: "xǐ liǎn", en: "wash face", emoji: "🧼" },
+  { zh: "刷牙", py: "shuā yá", en: "brush teeth", emoji: "🪥" },
+  { zh: "早餐", py: "zǎo cān", en: "breakfast", emoji: "🍳" },
+  { zh: "學校", py: "xué xiào", en: "school", emoji: "🏫" },
+  { zh: "玩耍", py: "wán shuǎ", en: "play", emoji: "🎮" },
+  { zh: "圖畫", py: "tú huà", en: "drawing", emoji: "🎨" },
+  { zh: "遊戲", py: "yóu xì", en: "game", emoji: "🎲" },
+  { zh: "課室", py: "kè shì", en: "classroom", emoji: "📚" },
+  { zh: "時間", py: "shí jiān", en: "time", emoji: "⏰" },
+  { zh: "旅行", py: "lǚ xíng", en: "travel", emoji: "✈️" },
+  { zh: "風箍", py: "fēng zhēng", en: "kite", emoji: "🪁" },
+  { zh: "老鼠", py: "lǎo shǔ", en: "mouse", emoji: "🐭" },
+  { zh: "認識", py: "rèn shi", en: "know / recognize", emoji: "👀" },
+  { zh: "橙汁", py: "chéng zhī", en: "orange juice", emoji: "🧃" },
+  { zh: "乳酪", py: "rǔ lào", en: "yogurt", emoji: "🥛" },
+  { zh: "問候", py: "wèn hòu", en: "greet", emoji: "👋" },
+  { zh: "親切", py: "qīn qiè", en: "kind", emoji: "😊" },
+  { zh: "生氣", py: "shēng qì", en: "angry", emoji: "😠" },
+  { zh: "蛋糕", py: "dàn gāo", en: "cake", emoji: "🎂" },
+  { zh: "驚慌", py: "jīng huāng", en: "panic", emoji: "😱" },
+  { zh: "亂跑", py: "luàn pǎo", en: "run around", emoji: "🏃" },
+  { zh: "團結", py: "tuán jié", en: "unite", emoji: "🤝" },
+  { zh: "國家", py: "guó jiā", en: "country", emoji: "🌍" }
+];
+
+const englishGroups = [
+  { pattern: "-ear", words: ["ear", "hear", "spear"], emoji: ["👂", "👂", "🏹"] },
+  { pattern: "-eer", words: ["deer", "beer", "cheer"], emoji: ["🦌", "🍺", "🎉"] },
+  { pattern: "-all", words: ["call", "hall", "wall"], emoji: ["📞", "🏛️", "🪡"] },
+  { pattern: "-alk", words: ["small", "talk", "walk"], emoji: ["🐜", "🗣️", "🚶"] },
+  { pattern: "o_e / ose", words: ["rose", "cone", "coke"], emoji: ["🌹", "🍦", "🥤"] },
+  { pattern: "-oat / -oal", words: ["goat", "coal", "float"], emoji: ["🐐", "⚫", "🛶"] },
+  { pattern: "-oe / -ore", words: ["toe", "floe", "core"], emoji: ["🦶", "🧊", "🍎"] },
+  { pattern: "-ore", words: ["store", "fork", "horse"], emoji: ["🏪", "🍴", "🐴"] }
+];
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function speak(text, lang) {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    utterance.rate = 0.8;
+    // Prefer Cantonese (Hong Kong) voice
+    const voices = speechSynthesis.getVoices();
+    let preferred = null;
+    if (lang.startsWith('zh')) {
+      preferred = voices.find(v => 
+        v.lang === 'zh-HK' || 
+        v.lang.startsWith('zh-HK') || 
+        v.lang.includes('yue') ||
+        (v.name && (v.name.toLowerCase().includes('cantonese') || v.name.toLowerCase().includes('hong kong') || v.name.includes('粵')))
+      );
+      // Fallback to any Chinese voice if no Cantonese found
+      if (!preferred) {
+        preferred = voices.find(v => v.lang.startsWith('zh'));
+      }
+    }
+    if (preferred) utterance.voice = preferred;
+    speechSynthesis.speak(utterance);
+  } else {
+    alert('Speech not supported in this browser. Try Chrome or Edge.');
+  }
+}
+
+function renderChinese() {
+  const grid = document.getElementById('chinese-grid');
+  chineseWords.forEach(w => {
+    const card = document.createElement('div');
+    card.className = 'word-card';
+    card.innerHTML = `
+      <div class="emoji">${w.emoji}</div>
+      <div class="chinese">${w.zh}</div>
+      <div class="pinyin">${w.py}</div>
+      <div class="english">${w.en}</div>
+      <button class="listen" onclick="speak('${w.zh}', 'zh-HK'); setTimeout(() => speak('${w.en}', 'en-US'), 1200);">🔊 Listen 聽</button>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function renderEnglish() {
+  const grid = document.getElementById('english-grid');
+  englishGroups.forEach(g => {
+    g.words.forEach((word, i) => {
+      const card = document.createElement('div');
+      card.className = 'word-card';
+      card.innerHTML = `
+        <div class="emoji">${g.emoji[i]}</div>
+        <div class="english" style="font-size:2.5em; font-weight:bold;">${word}</div>
+        <div class="pinyin">Pattern: ${g.pattern}</div>
+        <button class="listen" onclick="speak('${word}', 'en-US')">🔊 Listen</button>
+      `;
+      grid.appendChild(card);
+    });
+  });
+}
+
+let currentQuiz = null;
+function startSimilarQuiz() {
+  const group = englishGroups[Math.floor(Math.random() * englishGroups.length)];
+  const correctIdx = Math.floor(Math.random() * group.words.length);
+  const correctWord = group.words[correctIdx];
+  currentQuiz = { group, correctWord, correctIdx };
+  
+  speak(correctWord, 'en-US');
+  
+  const area = document.getElementById('quiz-area');
+  area.innerHTML = `<h3>What did you hear? (Pattern: ${group.pattern})</h3>`;
+  group.words.forEach((word, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'option';
+    btn.innerHTML = `${group.emoji[i]} ${word}`;
+    btn.onclick = () => checkAnswer(word, btn);
+    area.appendChild(btn);
+  });
+}
+
+function checkAnswer(selected, btn) {
+  const options = document.querySelectorAll('.option');
+  options.forEach(o => o.style.pointerEvents = 'none');
+  if (selected === currentQuiz.correctWord) {
+    btn.classList.add('correct');
+    speak('Great job!', 'en-US');
+  } else {
+    btn.classList.add('wrong');
+    options.forEach(o => {
+      if (o.textContent.includes(currentQuiz.correctWord)) o.classList.add('correct');
+    });
+    speak('Try again', 'en-US');
+  }
+}
+
+// Load voices
+speechSynthesis.onvoiceschanged = () => {};
+renderChinese();
+renderEnglish();
+</script>
+</body>
+</html>
