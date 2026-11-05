@@ -142,11 +142,13 @@ function speak(text, lang, btn) {
 function highlightPattern(word, pattern) {
   const clean = pattern.replace(/[^a-zA-Z]/g, '').toLowerCase();
   const lower = word.toLowerCase();
-  let idx = -1;
-  if (clean.length >= 2 && lower.endsWith(clean.slice(-2))) {
-    idx = lower.lastIndexOf(clean.slice(-2));
-  } else if (clean.length >= 3 && lower.endsWith(clean.slice(-3))) {
-    idx = lower.lastIndexOf(clean.slice(-3));
+  let idx = lower.lastIndexOf(clean);
+  if (idx === -1 && clean.length > 2) {
+    for (let len = clean.length - 1; len >= 2; len--) {
+      const sub = clean.slice(-len);
+      const pos = lower.lastIndexOf(sub);
+      if (pos !== -1) { idx = pos; break; }
+    }
   }
   if (idx >= 0) {
     return word.slice(0, idx) + '<span class="highlight">' + word.slice(idx) + '</span>';
@@ -360,6 +362,7 @@ function renderEnglishQuiz() {
     const btn = document.createElement('div');
     btn.className = 'option';
     btn.textContent = opt;
+    btn.onmouseover = () => speak(opt, 'en-US');
     btn.onclick = () => checkEnglishAnswer(opt === correct, btn, correct);
     optsDiv.appendChild(btn);
   });
