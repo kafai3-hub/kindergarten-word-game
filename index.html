@@ -21,18 +21,20 @@ h1 { color: #00796b; font-size: 2.2em; margin-bottom: 10px; }
 .chinese { font-size: 3.5em; color: #d32f2f; font-weight: bold; margin: 10px 0; }
 .english { font-size: 2.8em; color: #388e3c; font-weight: bold; }
 .pattern { font-size: 1.1em; color: #1976d2; margin: 8px 0; }
-.pattern .highlight { color: #e65100; font-weight: bold; background: #fff3e0; padding: 2px 6px; border-radius: 4px; }
+.highlight { color: #e65100; font-weight: bold; background: #fff3e0; padding: 2px 6px; border-radius: 4px; }
 .emoji { font-size: 5em; }
 button { font-size: 1.1em; padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; margin: 5px; }
 button.pronounce { background: #ff9800; color: white; }
 button.pronounce:disabled { background: #ccc; cursor: not-allowed; }
 button.nav { background: #4db6ac; color: white; }
 button.share { background: #25D366; color: white; font-size: 1.1em; padding: 12px 25px; }
-.option { background: #bbdefb; margin: 8px auto; padding: 15px; border-radius: 10px; font-size: 1.4em; cursor: pointer; max-width: 280px; }
+.option { background: #bbdefb; margin: 10px auto; padding: 20px; border-radius: 12px; font-size: 2em; cursor: pointer; max-width: 300px; font-weight: bold; }
 .option.correct { background: #81c784; }
 .option.wrong { background: #e57373; }
 .stars { font-size: 1.8em; margin: 10px; }
 .progress { margin: 15px; font-size: 1.1em; color: #00796b; }
+.group-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin: 20px; }
+.group-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); min-width: 180px; }
 #quiz-area { margin-top: 15px; }
 </style>
 </head>
@@ -107,7 +109,6 @@ let currentSection = 0;
 let currentCard = 0;
 let sectionStars = 0;
 let sectionTotal = 0;
-let mode = 'learn';
 
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -132,24 +133,22 @@ function speak(text, lang, btn) {
     if (!preferred) preferred = voices.find(v => v.lang.startsWith('zh'));
   }
   if (preferred) utterance.voice = preferred;
-  utterance.onend = () => {
-    speaking = false;
-    if (btn) btn.disabled = false;
-  };
-  utterance.onerror = () => {
-    speaking = false;
-    if (btn) btn.disabled = false;
-  };
+  utterance.onend = () => { speaking = false; if (btn) btn.disabled = false; };
+  utterance.onerror = () => { speaking = false; if (btn) btn.disabled = false; };
   speechSynthesis.speak(utterance);
 }
 
 function highlightPattern(word, pattern) {
-  const p = pattern.replace(/[^a-zA-Z]/g, '').toLowerCase();
-  if (word.toLowerCase().endsWith(p.slice(-3)) || word.toLowerCase().includes(p)) {
-    const idx = word.toLowerCase().lastIndexOf(p.slice(-2) || p.slice(0,2));
-    if (idx >= 0) {
-      return word.slice(0, idx) + '<span class="highlight">' + word.slice(idx) + '</span>';
-    }
+  const clean = pattern.replace(/[^a-zA-Z]/g, '').toLowerCase();
+  const lower = word.toLowerCase();
+  let idx = -1;
+  if (clean.length >= 2 && lower.endsWith(clean.slice(-2))) {
+    idx = lower.lastIndexOf(clean.slice(-2));
+  } else if (clean.length >= 3 && lower.endsWith(clean.slice(-3))) {
+    idx = lower.lastIndexOf(clean.slice(-3));
+  }
+  if (idx >= 0) {
+    return word.slice(0, idx) + '<span class="highlight">' + word.slice(idx) + '</span>';
   }
   return word;
 }
@@ -157,7 +156,6 @@ function highlightPattern(word, pattern) {
 function startChineseSection() {
   currentSection = 0;
   currentCard = 0;
-  mode = 'learn';
   sectionStars = 0;
   sectionTotal = 0;
   renderChineseCard();
@@ -178,7 +176,7 @@ function renderChineseCard() {
   const w = words[currentCard];
   document.getElementById('chinese-content').innerHTML = `
     <div class="progress">Section ${currentSection + 1} · Card ${currentCard + 1} / ${words.length}</div>
-    <button class="pronounce" id="pronBtn" onclick="speak('${w.zh}', 'zh-HK', this)">讀音</button>
+    <button class="pronounce" onclick="speak('${w.zh}', 'zh-HK', this)">讀音</button>
     <div class="word-card">
       <div class="emoji">${w.emoji}</div>
       <div class="chinese">${w.zh}</div>
@@ -187,10 +185,7 @@ function renderChineseCard() {
   `;
 }
 
-function nextChineseCard() {
-  currentCard++;
-  renderChineseCard();
-}
+function nextChineseCard() { currentCard++; renderChineseCard(); }
 
 function nextChineseSection() {
   currentSection++;
@@ -203,7 +198,6 @@ function nextChineseSection() {
 }
 
 function startChineseQuiz() {
-  mode = 'quiz';
   currentCard = 0;
   sectionStars = 0;
   sectionTotal = 0;
@@ -216,7 +210,7 @@ function renderChineseQuiz() {
   if (currentCard >= words.length) {
     document.getElementById('chinese-content').innerHTML = `
       <h3>Quiz Complete!</h3>
-      <div class="stars">${'⭐'.repeat(sectionStars)}${'☆'.repeat(sectionTotal - sectionStars)}</div>
+      <div class="stars">${'⭐'.repeat(sectionStars)}${'☆'.repeat(Math.max(0, sectionTotal - sectionStars))}</div>
       <p>${sectionStars} / ${sectionTotal} correct</p>
       <button class="nav" onclick="nextChineseSection()">Next Section 下一組</button>
     `;
@@ -234,7 +228,7 @@ function renderChineseQuiz() {
     <div class="progress">Quiz · ${currentCard + 1} / ${words.length}</div>
     <button class="pronounce" onclick="speak('${correct.zh}', 'zh-HK', this)">讀音</button>
     <div class="word-card">
-      <div class="chinese">${correct.zh}</div>
+      <div class="emoji">${correct.emoji}</div>
     </div>
     <div id="quiz-options"></div>
   `;
@@ -242,22 +236,21 @@ function renderChineseQuiz() {
   options.forEach(opt => {
     const btn = document.createElement('div');
     btn.className = 'option';
-    btn.innerHTML = `${opt.emoji} ${opt.zh}`;
-    btn.onclick = () => checkChineseAnswer(opt.zh === correct.zh, btn);
+    btn.textContent = opt.zh;
+    btn.onclick = () => checkChineseAnswer(opt.zh === correct.zh, btn, correct.zh);
     optsDiv.appendChild(btn);
   });
 }
 
-function checkChineseAnswer(isCorrect, btn) {
-  const options = document.querySelectorAll('.option');
-  options.forEach(o => o.style.pointerEvents = 'none');
+function checkChineseAnswer(isCorrect, btn, correctZh) {
+  document.querySelectorAll('.option').forEach(o => o.style.pointerEvents = 'none');
   if (isCorrect) {
     btn.classList.add('correct');
     sectionStars++;
     speak('正確', 'zh-HK');
   } else {
     btn.classList.add('wrong');
-    options.forEach(o => { if (o.textContent.includes(chineseWords[currentSection*5 + currentCard].zh)) o.classList.add('correct'); });
+    document.querySelectorAll('.option').forEach(o => { if (o.textContent === correctZh) o.classList.add('correct'); });
     speak('再試一次', 'zh-HK');
   }
   setTimeout(() => { currentCard++; renderChineseQuiz(); }, 1200);
@@ -265,52 +258,39 @@ function checkChineseAnswer(isCorrect, btn) {
 
 function startEnglishModule() {
   currentSection = 0;
-  currentCard = 0;
-  mode = 'learn';
-  renderEnglishCard();
+  renderEnglishModule();
 }
 
-function renderEnglishCard() {
+function renderEnglishModule() {
   if (currentSection >= englishGroups.length) {
     document.getElementById('english-content').innerHTML = '<h3>All modules complete!</h3>';
     return;
   }
   const g = englishGroups[currentSection];
-  if (currentCard >= g.words.length) {
-    document.getElementById('english-content').innerHTML = `
-      <h3>Module "${g.pattern}" Complete!</h3>
-      <button class="nav" onclick="startEnglishQuiz()">Start Quiz</button>
-      <button class="nav" onclick="nextEnglishModule()">Next Module</button>
+  let html = `<div class="progress">Module ${currentSection + 1}: Pattern ${g.pattern}</div>`;
+  html += '<div class="group-grid">';
+  g.words.forEach((word, i) => {
+    const highlighted = highlightPattern(word, g.pattern);
+    html += `
+      <div class="group-card">
+        <div class="emoji">${g.emoji[i]}</div>
+        <div class="english">${highlighted}</div>
+        <button class="pronounce" onclick="speak('${word}', 'en-US', this)">Listen</button>
+      </div>
     `;
-    return;
-  }
-  const word = g.words[currentCard];
-  const highlighted = highlightPattern(word, g.pattern);
-  document.getElementById('english-content').innerHTML = `
-    <div class="progress">Module ${currentSection + 1} · Card ${currentCard + 1} / ${g.words.length}</div>
-    <button class="pronounce" onclick="speak('${word}', 'en-US', this)">Listen</button>
-    <div class="word-card">
-      <div class="emoji">${g.emoji[currentCard]}</div>
-      <div class="english">${highlighted}</div>
-      <div class="pattern">Pattern: ${g.pattern}</div>
-    </div>
-    <button class="nav" onclick="nextEnglishCard()">Next</button>
-  `;
-}
-
-function nextEnglishCard() {
-  currentCard++;
-  renderEnglishCard();
+  });
+  html += '</div>';
+  html += `<button class="nav" onclick="startEnglishQuiz()">Start Quiz</button> `;
+  html += `<button class="nav" onclick="nextEnglishModule()">Next Module</button>`;
+  document.getElementById('english-content').innerHTML = html;
 }
 
 function nextEnglishModule() {
   currentSection++;
-  currentCard = 0;
-  renderEnglishCard();
+  renderEnglishModule();
 }
 
 function startEnglishQuiz() {
-  mode = 'quiz';
   currentCard = 0;
   sectionStars = 0;
   sectionTotal = 0;
@@ -322,44 +302,47 @@ function renderEnglishQuiz() {
   if (currentCard >= g.words.length) {
     document.getElementById('english-content').innerHTML = `
       <h3>Quiz Complete!</h3>
-      <div class="stars">${'⭐'.repeat(sectionStars)}${'☆'.repeat(sectionTotal - sectionStars)}</div>
+      <div class="stars">${'⭐'.repeat(sectionStars)}${'☆'.repeat(Math.max(0, sectionTotal - sectionStars))}</div>
       <p>${sectionStars} / ${sectionTotal} correct</p>
       <button class="nav" onclick="nextEnglishModule()">Next Module</button>
     `;
     return;
   }
   const correct = g.words[currentCard];
-  const options = [...g.words];
-  while (options.length < 3) options.push(g.words[Math.floor(Math.random()*g.words.length)]);
+  const options = [...new Set(g.words)];
+  while (options.length < 3) {
+    const extra = englishGroups[Math.floor(Math.random()*englishGroups.length)].words[0];
+    if (!options.includes(extra)) options.push(extra);
+  }
   options.sort(() => Math.random() - 0.5);
   sectionTotal++;
   document.getElementById('english-content').innerHTML = `
     <div class="progress">Quiz · ${currentCard + 1} / ${g.words.length}</div>
     <button class="pronounce" onclick="speak('${correct}', 'en-US', this)">Listen</button>
     <div class="word-card">
-      <div class="english">${correct}</div>
+      <div class="emoji">${g.emoji[currentCard]}</div>
     </div>
     <div id="quiz-options"></div>
   `;
   const optsDiv = document.getElementById('quiz-options');
-  options.slice(0,3).forEach((opt, i) => {
+  options.slice(0,3).forEach(opt => {
     const btn = document.createElement('div');
     btn.className = 'option';
-    btn.innerHTML = `${g.emoji[g.words.indexOf(opt)] || '❓'} ${opt}`;
-    btn.onclick = () => checkEnglishAnswer(opt === correct, btn);
+    btn.textContent = opt;
+    btn.onclick = () => checkEnglishAnswer(opt === correct, btn, correct);
     optsDiv.appendChild(btn);
   });
 }
 
-function checkEnglishAnswer(isCorrect, btn) {
-  const options = document.querySelectorAll('.option');
-  options.forEach(o => o.style.pointerEvents = 'none');
+function checkEnglishAnswer(isCorrect, btn, correctWord) {
+  document.querySelectorAll('.option').forEach(o => o.style.pointerEvents = 'none');
   if (isCorrect) {
     btn.classList.add('correct');
     sectionStars++;
     speak('Great job!', 'en-US');
   } else {
     btn.classList.add('wrong');
+    document.querySelectorAll('.option').forEach(o => { if (o.textContent === correctWord) o.classList.add('correct'); });
     speak('Try again', 'en-US');
   }
   setTimeout(() => { currentCard++; renderEnglishQuiz(); }, 1200);
@@ -383,7 +366,7 @@ function startSimilarQuiz() {
     div.innerHTML = `<button class="pronounce" onclick="speak('${word}', 'en-US', this)">🔊 ${word}</button>`;
     const btn = document.createElement('div');
     btn.className = 'option';
-    btn.innerHTML = `${group.emoji[i]} ${word}`;
+    btn.textContent = word;
     btn.onclick = () => checkSimilarAnswer(word, btn);
     div.appendChild(btn);
     opts.appendChild(div);
@@ -391,15 +374,14 @@ function startSimilarQuiz() {
 }
 
 function checkSimilarAnswer(selected, btn) {
-  const options = document.querySelectorAll('.option');
-  options.forEach(o => o.style.pointerEvents = 'none');
+  document.querySelectorAll('.option').forEach(o => o.style.pointerEvents = 'none');
   if (selected === currentQuiz.correctWord) {
     btn.classList.add('correct');
     speak('Great job!', 'en-US');
   } else {
     btn.classList.add('wrong');
-    options.forEach(o => {
-      if (o.textContent.includes(currentQuiz.correctWord)) o.classList.add('correct');
+    document.querySelectorAll('.option').forEach(o => {
+      if (o.textContent === currentQuiz.correctWord) o.classList.add('correct');
     });
     speak('Try again', 'en-US');
   }
